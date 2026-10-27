@@ -5491,6 +5491,74 @@ func TestRunIssueRunsWarnsOnTruncatedFamilyRead(t *testing.T) {
 	}
 }
 
+// Rerun without --task keeps the assignee-driven contract (an empty body),
+// while --task forwards the named run as task_id so the server repeats that
+// run's agent instead of whoever is assigned now. Short run prefixes resolve
+// against this issue's history, the same way cancel-task resolves them.
+func TestRunIssueRerunResolvesTaskFlag(t *testing.T) {
+	issueID := "1881a167-4bb6-4602-944b-f40ce4192fe6"
+	runID := "abcd1234-0000-0000-0000-000000000001"
+	otherRunID := "abcd9999-0000-0000-0000-000000000002"
+
+	for _, tc := range []struct {
+		name     string
+		taskFlag string
+		want     string
+	}{
+		{"default reruns the assignee", "", ""},
+		{"full run UUID is forwarded", runID, runID},
+		{"short run prefix resolves within the issue", "abcd1234", runID},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var body map[string]any
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case "/api/issues/" + issueID + "/task-runs":
+					_ = json.NewEncoder(w).Encode([]map[string]any{
+						{"id": runID},
+						{"id": otherRunID},
+					})
+				case "/api/issues/" + issueID + "/rerun":
+					if r.Method != http.MethodPost {
+						t.Errorf("rerun method = %s, want POST", r.Method)
+					}
+					if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+						t.Errorf("decode rerun body: %v", err)
+					}
+					_ = json.NewEncoder(w).Encode(map[string]any{
+						"id": "new-run", "agent_id": "agent-1",
+					})
+				default:
+					http.NotFound(w, r)
+				}
+			}))
+			defer srv.Close()
+
+			t.Setenv("MULTICA_SERVER_URL", srv.URL)
+			t.Setenv("MULTICA_WORKSPACE_ID", "ws-1")
+			t.Setenv("MULTICA_TOKEN", "test-token")
+
+			cmd := &cobra.Command{Use: "rerun"}
+			cmd.Flags().String("output", "json", "")
+			cmd.Flags().String("task", "", "")
+			if tc.taskFlag != "" {
+				if err := cmd.Flags().Set("task", tc.taskFlag); err != nil {
+					t.Fatalf("set --task: %v", err)
+				}
+			}
+
+			if _, err := captureStdout(t, func() error { return runIssueRerun(cmd, []string{issueID}) }); err != nil {
+				t.Fatalf("issue rerun: %v", err)
+			}
+
+			got, _ := body["task_id"].(string)
+			if got != tc.want {
+				t.Fatalf("task_id = %q, want %q (body %v)", got, tc.want, body)
+			}
+		})
+	}
+}
+
 // fakeIssueRows builds n minimal issue rows for a fake /api/issues response.
 func fakeIssueRows(n int) []map[string]any {
 	rows := make([]map[string]any, 0, n)

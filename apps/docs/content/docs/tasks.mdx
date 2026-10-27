@@ -143,13 +143,14 @@ Clicking the retry button on a row in the execution log invokes **the agent that
 
 A retry keeps the files the previous run already wrote to the local directory whenever possible. If the original session is still safe and the same runtime claims the retry, it continues that session. Errors that poison the session, such as context overflow or invalid requests, start a new session on top of the original working directory instead. When the original directory no longer exists, a fresh working directory is used.
 
-You can also rerun the current issue from the CLI:
+You can also rerun an issue from the CLI:
 
 ```bash
 multica issue rerun <issue-id>
+multica issue rerun <issue-id> --task <run-id>
 ```
 
-This form does not point at a specific past run, so it uses the issue's current agent assignee and starts with a fresh session and working directory.
+Pass `--task` with a run ID from `multica issue runs <issue-id>` to repeat that specific run: like the execution-log retry button, it reuses the run's working directory and resumes its session unless the failure poisoned the conversation. Without `--task`, the command uses the issue's current agent assignee and starts with a fresh session and working directory.
 
 ## Run completion and issue completion
 

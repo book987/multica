@@ -143,13 +143,14 @@ import { RunLifecycleDemo } from "@/components/demos/run-lifecycle-demo";
 
 重试会尽量保留上一次已经写入本地目录的文件。原会话仍然安全、又由同一个运行时领取时，会接着之前的会话继续。上下文溢出、无效请求这类会污染会话的错误，会在原工作目录上开新会话；原目录已经不存在时，改用新的工作目录。
 
-也可以通过 CLI 重新运行当前任务：
+也可以通过 CLI 重新运行任务：
 
 ```bash
 multica issue rerun <issue-id>
+multica issue rerun <issue-id> --task <run-id>
 ```
 
-这条命令没有指定哪一条历史运行，所以会交给任务当前的智能体负责人，从新的会话和工作目录开始。
+用 `--task` 指定 `multica issue runs <issue-id>` 中的运行 ID，即可重跑那一次具体运行：与执行日志中的重试按钮相同，会复用该运行的工作目录，失败没有污染会话时接着原会话继续。不带 `--task` 时，命令会交给任务当前的智能体负责人，从新的会话和工作目录开始。
 
 ## 运行完成与任务完成
 

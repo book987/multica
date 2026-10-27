@@ -143,13 +143,14 @@ Cliquer sur le bouton Relancer l'exécution d'une ligne du journal d'exécution 
 
 Une relance conserve autant que possible les fichiers que l'exécution précédente a déjà écrits dans le répertoire local. Si la session d'origine est toujours sûre et que le même runtime prend en charge la relance, celle-ci poursuit aussi la session précédente. Les erreurs qui corrompent la session, comme un dépassement de contexte ou des requêtes invalides, démarrent plutôt une nouvelle session dans le répertoire de travail d'origine. Lorsque le répertoire d'origine n'existe plus, un nouveau répertoire de travail est utilisé.
 
-Vous pouvez aussi relancer la tâche en cours depuis le CLI :
+Vous pouvez aussi relancer une tâche depuis le CLI :
 
 ```bash
 multica issue rerun <issue-id>
+multica issue rerun <issue-id> --task <run-id>
 ```
 
-Cette forme ne vise pas une exécution passée précise : elle utilise l'agent actuellement assigné à la tâche et démarre avec une nouvelle session et un nouveau répertoire de travail.
+Avec `--task` et un ID d'exécution affiché par `multica issue runs <issue-id>`, la commande relance cette exécution précise : comme le bouton de relance du journal d'exécution, elle réutilise son répertoire de travail et reprend sa session, sauf si l'échec a corrompu la conversation. Sans `--task`, elle utilise l'agent actuellement assigné à la tâche et démarre avec une nouvelle session et un nouveau répertoire de travail.
 
 ## Fin d'exécution et fin de tâche
 
